@@ -44,7 +44,7 @@ export class SearchHandler {
             box-sizing: border-box;
           }
           button {
-            width: 30%;
+            width: 45%;
             padding: 15px;
             margin: 10px 5px;
             border-radius: 8px;
@@ -77,7 +77,6 @@ export class SearchHandler {
         <div style="text-align: center;">
           <button onclick="search('keyword')">Keyword Search</button>
           <button onclick="search('hybrid')">Hybrid Search</button>
-          <button onclick="search('generative')">Generative Search</button>
         </div>
         <div id="output"></div>
 
@@ -86,7 +85,7 @@ export class SearchHandler {
             const query = document.getElementById('query').value;
             const response = await fetch(\`/\${type}/\${encodeURIComponent(query)}\`);
             const result = await response.json();
-            document.getElementById('output').innerText = result.content;
+            document.getElementById('output').innerText = JSON.stringify(result.content, null, 2);
           }
         </script>
       </body>
@@ -98,15 +97,16 @@ export class SearchHandler {
   @GetApi('/keyword/:query')
   static async getKeywordResults(ctxt: HandlerContext, query: string) {
     const result = await client.graphql
-      .get()
-      .withClassName("Matt_sleep_Col")
-      .withBm25({ query })
-      .withLimit(10)
-      .withFields("content title start duration _additional { score } ")
-      .do();
+    .get()
+    .withClassName("Matthew_Walker_small")
+    .withBm25({ query })
+    .withLimit(1)
+    .withFields("content title start duration _additional { score } ")
+    .do();
 
-    // Return the content as part of a JSON object
-    const content = result.data.Get.Matt_sleep_Col[0].content;
+    // Return the raw JSON content
+    const content = result.data.Get;
+    console.log(content)
     return Promise.resolve({ content });
   }
 
@@ -114,34 +114,14 @@ export class SearchHandler {
   static async getHybridResults(ctxt: HandlerContext, query: string) {
     const result = await client.graphql
       .get()
-      .withClassName("Matt_sleep_Col")
+      .withClassName("Matthew_Walker_small")
       .withFields("content title start duration _additional { score } ")
       .withHybrid({ query, alpha: 0.7 })
-      .withLimit(10)
+      .withLimit(1)
       .do();
 
-    // Return the content as part of a JSON object
-    const content = result.data.Get.Matt_sleep_Col[0].content;
-    return Promise.resolve({ content });
-  }
-
-  @GetApi('/generative/:query')
-  static async getGenerativeResults(ctxt: HandlerContext, query: string) {
-    const result = await client.graphql
-      .get()
-      .withClassName("Matt_sleep_Col")
-      .withNearText({ concepts: [query] })
-      .withGenerate({
-        singlePrompt: `Matthew Walker received the following question: "${query}". Please provide a clear and detailed response as if Matthew Walker is directly answering the question, ensuring the explanation is easy to understand and addresses the key points.`,
-      })
-      .withLimit(10)
-      .withFields("content title start duration _additional { score } ")
-      .do();
-
-    // Extract the content from the result
-    const content = result.data.Get.Matt_sleep_Col[0].content;
-
-    // Return the content wrapped in a JSON object
+    // Return the raw JSON content
+    const content = result.data.Get;
     return Promise.resolve({ content });
   }
 }
